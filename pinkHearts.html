@@ -75,8 +75,8 @@
 
         class Heart {
             constructor(x, y) {
-                this.x = x;
-                this.y = y;
+                this.x = Math.max(0, Math.min(x, window.innerWidth - 80)); // Initial clamp
+                this.y = Math.max(0, Math.min(y, window.innerHeight - 80)); // Initial clamp
                 this.speedX = (Math.random() - 0.5) * 3;
                 this.speedY = (Math.random() - 0.5) * 3;
                 this.opacity = 1;
@@ -84,8 +84,8 @@
 
                 this.element = document.createElement('div');
                 this.element.className = 'heart';
-                this.element.style.left = `${x}px`;
-                this.element.style.top = `${y}px`;
+                this.element.style.left = `${this.x}px`;
+                this.element.style.top = `${this.y}px`;
                 this.element.innerHTML = '♥';
                 document.body.appendChild(this.element);
 
@@ -110,26 +110,28 @@
             update() {
                 if (!this.popping) {
                     // Update position
-                    this.x += this.speedX;
-                    this.y += this.speedY;
+                    let newX = this.x + this.speedX;
+                    let newY = this.y + this.speedY;
 
-                    // Keep hearts within bounds with bounce
-                    if (this.x < 0) {
-                        this.x = 0;
-                        this.speedX = Math.abs(this.speedX);
+                    // Strict boundary checking with bounce
+                    if (newX <= 0) {
+                        newX = 0;
+                        this.speedX = Math.abs(this.speedX) * 0.8; // Bounce with slight dampening
+                    } else if (newX >= window.innerWidth - 80) {
+                        newX = window.innerWidth - 80;
+                        this.speedX = -Math.abs(this.speedX) * 0.8;
                     }
-                    if (this.x > window.innerWidth - 80) {
-                        this.x = window.innerWidth - 80;
-                        this.speedX = -Math.abs(this.speedX);
+
+                    if (newY <= 0) {
+                        newY = 0;
+                        this.speedY = Math.abs(this.speedY) * 0.8;
+                    } else if (newY >= window.innerHeight - 80) {
+                        newY = window.innerHeight - 80;
+                        this.speedY = -Math.abs(this.speedY) * 0.8;
                     }
-                    if (this.y < 0) {
-                        this.y = 0;
-                        this.speedY = Math.abs(this.speedY);
-                    }
-                    if (this.y > window.innerHeight - 80) {
-                        this.y = window.innerHeight - 80;
-                        this.speedY = -Math.abs(this.speedY);
-                    }
+
+                    this.x = newX;
+                    this.y = newY;
 
                     this.element.style.left = `${this.x}px`;
                     this.element.style.top = `${this.y}px`;
@@ -137,12 +139,10 @@
             }
         }
 
-        // Game setup
         let hearts = [];
         const initialHeartCount = 10;
         let totalHeartsCreated = initialHeartCount;
 
-        // Create initial hearts
         function spawnHeart() {
             const newHeart = new Heart(
                 Math.random() * (window.innerWidth - 80),
@@ -156,16 +156,13 @@
             spawnHeart();
         }
 
-        // Game loop
         let lastSpawnTime = Date.now();
-        const spawnInterval = 2000; // Spawn new heart every 2 seconds after popping
+        const spawnInterval = 2000;
 
         function gameLoop() {
-            // Update all hearts
             hearts = hearts.filter(heart => !heart.popping || heart.opacity > 0);
             hearts.forEach(heart => heart.update());
 
-            // Spawn new hearts periodically
             const currentTime = Date.now();
             if (currentTime - lastSpawnTime >= spawnInterval && hearts.length < 15) {
                 spawnHeart();
@@ -177,7 +174,6 @@
 
         gameLoop();
 
-        // Prevent default touch behaviors
         document.addEventListener('touchstart', (e) => {
             if (e.target === canvas) {
                 e.preventDefault();

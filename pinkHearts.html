@@ -29,7 +29,7 @@
             height: 80px;
             font-size: 80px;
             line-height: 80px;
-            color: #ff69b4; /* Hot pink */
+            color: #ff69b4;
             text-align: center;
             transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
             touch-action: none;
@@ -41,7 +41,7 @@
             transform: scale(2.5) rotate(720deg);
             opacity: 0;
             filter: drop-shadow(0 0 20px rgba(255, 105, 180, 1));
-            color: #ffb6c1; /* Lighter pink for pop effect */
+            color: #ffb6c1;
         }
     </style>
 </head>
@@ -49,7 +49,6 @@
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        // Audio context for generating pop sound
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playPopSound() {
             const oscillator = audioCtx.createOscillator();
@@ -64,7 +63,6 @@
             oscillator.stop(audioCtx.currentTime + 0.2);
         }
 
-        // Canvas setup
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -75,13 +73,12 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Heart class
         class Heart {
             constructor(x, y) {
                 this.x = x;
                 this.y = y;
-                this.speedX = (Math.random() - 0.5) * 2;
-                this.speedY = (Math.random() - 0.5) * 2;
+                this.speedX = (Math.random() - 0.5) * 3;
+                this.speedY = (Math.random() - 0.5) * 3;
                 this.opacity = 1;
                 this.popping = false;
 
@@ -89,7 +86,7 @@
                 this.element.className = 'heart';
                 this.element.style.left = `${x}px`;
                 this.element.style.top = `${y}px`;
-                this.element.innerHTML = '♥'; // Unicode heart symbol
+                this.element.innerHTML = '♥';
                 document.body.appendChild(this.element);
 
                 this.element.addEventListener('touchstart', (e) => {
@@ -112,11 +109,27 @@
 
             update() {
                 if (!this.popping) {
+                    // Update position
                     this.x += this.speedX;
                     this.y += this.speedY;
 
-                    if (this.x <= 0 || this.x >= window.innerWidth - 80) this.speedX *= -1;
-                    if (this.y <= 0 || this.y >= window.innerHeight - 80) this.speedY *= -1;
+                    // Keep hearts within bounds with bounce
+                    if (this.x < 0) {
+                        this.x = 0;
+                        this.speedX = Math.abs(this.speedX);
+                    }
+                    if (this.x > window.innerWidth - 80) {
+                        this.x = window.innerWidth - 80;
+                        this.speedX = -Math.abs(this.speedX);
+                    }
+                    if (this.y < 0) {
+                        this.y = 0;
+                        this.speedY = Math.abs(this.speedY);
+                    }
+                    if (this.y > window.innerHeight - 80) {
+                        this.y = window.innerHeight - 80;
+                        this.speedY = -Math.abs(this.speedY);
+                    }
 
                     this.element.style.left = `${this.x}px`;
                     this.element.style.top = `${this.y}px`;
@@ -126,25 +139,37 @@
 
         // Game setup
         let hearts = [];
-        const heartCount = 10;
+        const initialHeartCount = 10;
+        let totalHeartsCreated = initialHeartCount;
 
-        for (let i = 0; i < heartCount; i++) {
-            hearts.push(new Heart(
+        // Create initial hearts
+        function spawnHeart() {
+            const newHeart = new Heart(
                 Math.random() * (window.innerWidth - 80),
                 Math.random() * (window.innerHeight - 80)
-            ));
+            );
+            hearts.push(newHeart);
+            totalHeartsCreated++;
+        }
+
+        for (let i = 0; i < initialHeartCount; i++) {
+            spawnHeart();
         }
 
         // Game loop
+        let lastSpawnTime = Date.now();
+        const spawnInterval = 2000; // Spawn new heart every 2 seconds after popping
+
         function gameLoop() {
+            // Update all hearts
             hearts = hearts.filter(heart => !heart.popping || heart.opacity > 0);
             hearts.forEach(heart => heart.update());
 
-            if (hearts.length < heartCount) {
-                hearts.push(new Heart(
-                    Math.random() * (window.innerWidth - 80),
-                    Math.random() * (window.innerHeight - 80)
-                ));
+            // Spawn new hearts periodically
+            const currentTime = Date.now();
+            if (currentTime - lastSpawnTime >= spawnInterval && hearts.length < 15) {
+                spawnHeart();
+                lastSpawnTime = currentTime;
             }
 
             requestAnimationFrame(gameLoop);

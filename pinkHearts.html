@@ -75,8 +75,9 @@
 
         class Heart {
             constructor(x, y) {
-                this.x = Math.max(0, Math.min(x, window.innerWidth - 80)); // Initial clamp
-                this.y = Math.max(0, Math.min(y, window.innerHeight - 80)); // Initial clamp
+                // Ensure initial positions are within bounds
+                this.x = Math.max(0, Math.min(x, window.innerWidth - 80));
+                this.y = Math.max(0, Math.min(y, window.innerHeight - 80));
                 this.speedX = (Math.random() - 0.5) * 3;
                 this.speedY = (Math.random() - 0.5) * 3;
                 this.opacity = 1;
@@ -109,14 +110,12 @@
 
             update() {
                 if (!this.popping) {
-                    // Update position
                     let newX = this.x + this.speedX;
                     let newY = this.y + this.speedY;
 
-                    // Strict boundary checking with bounce
                     if (newX <= 0) {
                         newX = 0;
-                        this.speedX = Math.abs(this.speedX) * 0.8; // Bounce with slight dampening
+                        this.speedX = Math.abs(this.speedX) * 0.8;
                     } else if (newX >= window.innerWidth - 80) {
                         newX = window.innerWidth - 80;
                         this.speedX = -Math.abs(this.speedX) * 0.8;
@@ -144,17 +143,26 @@
         let totalHeartsCreated = initialHeartCount;
 
         function spawnHeart() {
-            const newHeart = new Heart(
-                Math.random() * (window.innerWidth - 80),
-                Math.random() * (window.innerHeight - 80)
-            );
+            // Ensure spawn position is within bounds
+            const x = Math.random() * (window.innerWidth - 80);
+            const y = Math.random() * (window.innerHeight - 80);
+            const newHeart = new Heart(x, y);
             hearts.push(newHeart);
             totalHeartsCreated++;
         }
 
-        for (let i = 0; i < initialHeartCount; i++) {
-            spawnHeart();
+        // Initial spawn with strict bounds
+        function initializeHearts() {
+            for (let i = 0; i < initialHeartCount; i++) {
+                spawnHeart();
+            }
         }
+
+        // Wait for canvas to be sized before spawning
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            initializeHearts();
+        });
 
         let lastSpawnTime = Date.now();
         const spawnInterval = 2000;

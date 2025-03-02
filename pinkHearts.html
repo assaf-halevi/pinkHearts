@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Popper Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        .heart {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            font-size: 80px;
+            line-height: 80px;
+            color: #ff69b4; /* Hot pink */
+            text-align: center;
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            touch-action: none;
+            filter: drop-shadow(0 0 8px rgba(255, 105, 180, 0.7));
+            user-select: none;
+        }
+
+        .popping {
+            transform: scale(2.5) rotate(720deg);
+            opacity: 0;
+            filter: drop-shadow(0 0 20px rgba(255, 105, 180, 1));
+            color: #ffb6c1; /* Lighter pink for pop effect */
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // Audio context for generating pop sound
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPopSound() {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.2);
+        }
+
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Heart class
+        class Heart {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2;
+                this.opacity = 1;
+                this.popping = false;
+
+                this.element = document.createElement('div');
+                this.element.className = 'heart';
+                this.element.style.left = `${x}px`;
+                this.element.style.top = `${y}px`;
+                this.element.innerHTML = '♥'; // Unicode heart symbol
+                document.body.appendChild(this.element);
+
+                this.element.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if (!this.popping) {
+                        this.pop();
+                    }
+                });
+            }
+
+            pop() {
+                this.popping = true;
+                this.element.classList.add('popping');
+                playPopSound();
+                
+                setTimeout(() => {
+                    this.element.remove();
+                }, 800);
+            }
+
+            update() {
+                if (!this.popping) {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+
+                    if (this.x <= 0 || this.x >= window.innerWidth - 80) this.speedX *= -1;
+                    if (this.y <= 0 || this.y >= window.innerHeight - 80) this.speedY *= -1;
+
+                    this.element.style.left = `${this.x}px`;
+                    this.element.style.top = `${this.y}px`;
+                }
+            }
+        }
+
+        // Game setup
+        let hearts = [];
+        const heartCount = 10;
+
+        for (let i = 0; i < heartCount; i++) {
+            hearts.push(new Heart(
+                Math.random() * (window.innerWidth - 80),
+                Math.random() * (window.innerHeight - 80)
+            ));
+        }
+
+        // Game loop
+        function gameLoop() {
+            hearts = hearts.filter(heart => !heart.popping || heart.opacity > 0);
+            hearts.forEach(heart => heart.update());
+
+            if (hearts.length < heartCount) {
+                hearts.push(new Heart(
+                    Math.random() * (window.innerWidth - 80),
+                    Math.random() * (window.innerHeight - 80)
+                ));
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchstart', (e) => {
+            if (e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html>

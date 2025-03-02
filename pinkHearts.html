@@ -43,10 +43,24 @@
             filter: drop-shadow(0 0 20px rgba(255, 105, 180, 1));
             color: #ffb6c1;
         }
+
+        #resetHeart {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            font-size: 150px;
+            line-height: 150px;
+            color: #ff1493; /* Deep pink */
+            text-align: center;
+            filter: drop-shadow(0 0 12px rgba(255, 20, 147, 0.8));
+            cursor: pointer;
+            z-index: 10; /* Ensure it's above other hearts */
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <div id="resetHeart">♥</div>
 
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -65,17 +79,20 @@
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const resetHeart = document.getElementById('resetHeart');
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // Center the reset heart
+            resetHeart.style.left = `${(window.innerWidth - 150) / 2}px`;
+            resetHeart.style.top = `${(window.innerHeight - 150) / 2}px`;
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         class Heart {
             constructor(x, y) {
-                // Ensure initial positions are within bounds
                 this.x = Math.max(0, Math.min(x, window.innerWidth - 80));
                 this.y = Math.max(0, Math.min(y, window.innerHeight - 80));
                 this.speedX = (Math.random() - 0.5) * 3;
@@ -143,7 +160,6 @@
         let totalHeartsCreated = initialHeartCount;
 
         function spawnHeart() {
-            // Ensure spawn position is within bounds
             const x = Math.random() * (window.innerWidth - 80);
             const y = Math.random() * (window.innerHeight - 80);
             const newHeart = new Heart(x, y);
@@ -151,14 +167,21 @@
             totalHeartsCreated++;
         }
 
-        // Initial spawn with strict bounds
         function initializeHearts() {
+            hearts.forEach(heart => heart.element.remove()); // Remove existing hearts
+            hearts = [];
+            totalHeartsCreated = initialHeartCount;
             for (let i = 0; i < initialHeartCount; i++) {
                 spawnHeart();
             }
         }
 
-        // Wait for canvas to be sized before spawning
+        // Reset game when big heart is tapped
+        resetHeart.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            initializeHearts();
+        });
+
         window.addEventListener('load', () => {
             resizeCanvas();
             initializeHearts();
